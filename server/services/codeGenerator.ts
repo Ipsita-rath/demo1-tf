@@ -276,6 +276,56 @@ function generateVNetResourceGroupName(globalConfig?: any): string {
   return `rg-vnet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
 }
 
+// Generate proper Azure resource names following naming conventions
+function generateAzureResourceName(resourceType: string, globalConfig?: any): string {
+  const projectName = globalConfig?.projectName || 'iim';
+  const environment = globalConfig?.environment || 'nonprod';
+  const region = globalConfig?.region || 'Central US';
+  
+  // Convert region to short format
+  const getShortRegionName = (region: string) => {
+    const regionMap: { [key: string]: string } = {
+      'East US': 'eastus',
+      'East US 2': 'eastus2',
+      'West US': 'westus',
+      'West US 2': 'westus2',
+      'West US 3': 'westus3',
+      'Central US': 'centralus',
+      'North Central US': 'northcentralus',
+      'South Central US': 'southcentralus',
+      'West Central US': 'westcentralus'
+    };
+    return regionMap[region] || 'centralus';
+  };
+  
+  const shortRegion = getShortRegionName(region);
+  
+  switch (resourceType) {
+    case 'virtual_network':
+      return `vnet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'storage_account':
+      return `st${projectName.toLowerCase()}${environment}01`;
+    case 'key_vault':
+      return `kv${projectName.toLowerCase()}${environment}01`;
+    case 'virtual_machine':
+      return `vm-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'app_service':
+      return `app-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'sql_database':
+      return `sqldb-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'subnet':
+      return `snet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'network_security_group':
+      return `nsg-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'route_table':
+      return `rt-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'managed_identity':
+      return `id-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    default:
+      return `${resourceType.replace(/_/g, '')}-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+  }
+}
+
 function sortResourcesByDependencies(resources: TerraformResource[]): TerraformResource[] {
   const resourceGroups = resources.filter(r => r.type === 'azurerm_resource_group');
   const others = resources.filter(r => r.type !== 'azurerm_resource_group');
@@ -289,8 +339,8 @@ function sortResourcesByDependencies(resources: TerraformResource[]): TerraformR
 function generateResourceCode(resource: TerraformResource, useRemoteModules: boolean = true, globalConfig?: any, vnetRelatedResources?: TerraformResource[]): string {
   const { type, name, config } = resource;
   
-  // Use the configured name from the Resource Name input field, fallback to default name
-  const resourceName = config.name || name;
+  // Use the configured name from the Resource Name input field, fallback to generate proper Azure naming
+  const resourceName = config.name || generateAzureResourceName(type, globalConfig);
   
   // Determine which resource group to use based on resource type
   const isVNetRelated = vnetRelatedResources?.some(vr => vr.id === resource.id) || 

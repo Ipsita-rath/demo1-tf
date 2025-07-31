@@ -336,8 +336,8 @@ export default function GlobalInfoModal({
           setTags({
             "AppName": "Project",
             "Environment": "Dev",
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate,
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate,
             "Project": "AI-Studio",
             "Owner": "AI-Team",
             "CostCenter": "AI-Development"
@@ -356,8 +356,8 @@ export default function GlobalInfoModal({
           setTags({
             "AppName": "Project",
             "Environment": "Dev",
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate,
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate,
             "Project": "Web-Application",
             "Owner": "Development-Team"
           });
@@ -375,8 +375,8 @@ export default function GlobalInfoModal({
           setTags({
             "AppName": "Project",
             "Environment": "Test",
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate,
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate,
             "Project": "Testing",
             "Owner": "QA-Team"
           });
@@ -395,8 +395,8 @@ export default function GlobalInfoModal({
           setTags({
             "AppName": "Project",
             "Environment": "Dev",
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         } else {
           setTags(allTags);

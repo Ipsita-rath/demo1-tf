@@ -300,8 +300,8 @@ console.log(globalSettings);
     const currentTags = {
       "AppName": currentProjectName,
       "Environment": environmentLabel,
-      "Provisioned By": "Terraform", 
-      "Provisioned Date": formattedDate
+      "ProvisionedBy": "Terraform", 
+      "ProvisionedDate": formattedDate
     };
     
     console.log('📊 Configuration Panel Display Values:', {
@@ -390,8 +390,8 @@ console.log(globalSettings);
     const currentTags = {
       "AppName": currentProjectName,
       "Environment": environmentLabel,
-      "Provisioned By": "Terraform", 
-      "Provisioned Date": formattedDate
+      "ProvisionedBy": "Terraform", 
+      "ProvisionedDate": formattedDate
     };
     
     console.log('📁 Resource Group Display Values:', {

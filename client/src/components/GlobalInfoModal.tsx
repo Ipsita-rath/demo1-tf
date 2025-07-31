@@ -394,8 +394,8 @@ export default function GlobalInfoModal({
                         currentEnvironment === "dev" ? "Dev" :
                         currentEnvironment === "test" ? "Test" :
                         currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-          "Provisioned By": "Terraform",
-          "Provisioned Date": formattedDate
+          "ProvisionedBy": "Terraform",
+          "ProvisionedDate": formattedDate
         });
       } else {
         // Use defaults if no saved settings
@@ -413,8 +413,8 @@ export default function GlobalInfoModal({
                         currentEnvironment === "dev" ? "Dev" :
                         currentEnvironment === "test" ? "Test" :
                         currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-          "Provisioned By": "Terraform",
-          "Provisioned Date": formattedDate
+          "ProvisionedBy": "Terraform",
+          "ProvisionedDate": formattedDate
         });
       }
       
@@ -462,8 +462,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate,
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate,
             "Owner": "AI-Team",
             "CostCenter": "AI-Development"
           });
@@ -478,8 +478,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         }
       } else if (selectedLandingZone === "application_zone") {
@@ -495,8 +495,8 @@ export default function GlobalInfoModal({
                         currentEnvironment === "dev" ? "Dev" :
                         currentEnvironment === "test" ? "Test" :
                         currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-          "Provisioned By": "Terraform",
-          "Provisioned Date": formattedDate
+          "ProvisionedBy": "Terraform",
+          "ProvisionedDate": formattedDate
         });
       } else if (selectedLandingZone === "test_landing_zone") {
         setResourceName("Test Environment");
@@ -516,8 +516,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         } else {
           // Use existing tags but ensure AppName, Environment, Provisioned By, and Provisioned Date match current values
@@ -530,8 +530,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         }
       } else {
@@ -549,8 +549,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         } else {
           // Use existing tags but ensure AppName, Environment, Provisioned By, and Provisioned Date match current values
@@ -563,8 +563,8 @@ export default function GlobalInfoModal({
                           currentEnvironment === "dev" ? "Dev" :
                           currentEnvironment === "test" ? "Test" :
                           currentEnvironment === "prod" ? "Prod" : currentEnvironment,
-            "Provisioned By": "Terraform",
-            "Provisioned Date": formattedDate
+            "ProvisionedBy": "Terraform",
+            "ProvisionedDate": formattedDate
           });
         }
       }
