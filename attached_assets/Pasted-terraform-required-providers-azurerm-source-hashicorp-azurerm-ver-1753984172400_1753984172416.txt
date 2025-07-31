@@ -1,0 +1,193 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0.1"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 2.47.0"
+    }
+  }
+  required_version = ">= 1.3.0"
+}
+
+provider "azurerm" {
+  features {}
+  skip_provider_registration = true
+}
+
+provider "azuread" {}
+
+# ------------------------------------------------------------------------------------------------------
+# Data
+# ------------------------------------------------------------------------------------------------------
+data "azurerm_client_config" "current" {}
+data "azurerm_subscription" "current" {}
+
+# ------------------------------------------------------------------------------------------------------
+# Resource Groups
+# ------------------------------------------------------------------------------------------------------
+module "resource_group" {
+  source   = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
+  name     = "rg-iim-centralus-nonprod-01"
+  location = "Central US"
+
+  tags = {
+    Environment       = "Non-Prod"
+    Project           = "Testing"
+    cost-center       = "testing"
+  }
+}
+
+module "vnet_resource_group" {
+  source   = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
+  name     = "rg-vnet-centralus-nonprod-01"
+  location = "Central US"
+}
+
+
+# Create Custom Role Definition
+resource "azurerm_role_definition" "test-automation-role" {
+  name        = "Test Environment Automation Role"
+  scope       = resource_group
+  description = "Custom role for test environment automation and resource management"
+
+  permissions {
+    actions          = ["Microsoft.Network/virtualNetworks/*","Microsoft.Storage/storageAccounts/*","Microsoft.Resources/deployments/*","Microsoft.Authorization/roleAssignments/read","Microsoft.Insights/components/read"]
+    not_actions      = []
+    data_actions     = []
+    not_data_actions = []
+  }
+
+  assignable_scopes = [{{scope}}]
+}
+
+# ------------------------------------------------------------------------------------------------------
+# Virtual Network with Subnets
+# ------------------------------------------------------------------------------------------------------
+module "virtual_network" {
+  source = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/virtual_network"
+
+  resource_group_name          = module.vnet_resource_group.resource_group_name
+  location                     = module.vnet_resource_group.resource_group_location
+  virtual_network_name         = "vnet-iim-centralus-nonprod-01"
+  resource_token               = "iimvnet"
+  subscription_id              = data.azurerm_subscription.current.subscription_id
+
+  function_app_subnet_name     = "subnet-funcapp"
+  api_management_subnet_name   = "subnet-apim"
+  private_endpoint_subnet_name = "subnet-pe"
+  firewall_ip_address          = "0.0.0.0"
+
+  subnets = [
+    {
+      name                   = "subnet-funcapp"
+      address_prefixes       = ["10.1.1.0/24"]
+      service_delegation     = true
+      delegation_name        = "Microsoft.Web/serverFarms"
+      actions                = ["Microsoft.Network/virtualNetworks/subnets/action"]
+      network_security_rules = []
+    },
+    {
+      name                   = "subnet-apim"
+      address_prefixes       = ["10.1.2.0/24"]
+      service_delegation     = false
+      delegation_name        = ""
+      actions                = []
+      network_security_rules = []
+    },
+    {
+      name                   = "subnet-pe"
+      address_prefixes       = ["10.1.3.0/24"]
+      service_delegation     = false
+      delegation_name        = ""
+      actions                = []
+      network_security_rules = []
+    }
+  ]
+
+  tags = {
+    Environment       = "Non-Prod"
+    Project           = "iim"
+    cost-center       = "testing"
+    AppName           = "iim"
+    ProvisionedBy     = "Terraform"
+    ProvisionedDate   = "2025-07-31"
+  }
+}
+
+# ------------------------------------------------------------------------------------------------------
+# Storage Account Module
+# ------------------------------------------------------------------------------------------------------
+
+module "storage_account" {
+  source = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/storage_account"
+
+  resource_group_name = module.resource_group.resource_group_name
+  location            = module.resource_group.resource_group_location
+  storage_account_name = "sablobipmononprod01"
+  account_tier         = "Standard"
+  account_replication_type = "LRS"
+  subnet_id            = module.virtual_network.subnet_ids["subnet-pe"]
+
+  tags = {
+    Environment       = "Non-Prod"
+    Project           = "iim"
+    cost-center       = "testing"
+    AppName           = "iim"
+    ProvisionedBy     = "Terraform"
+    ProvisionedDate   = "2025-07-31"
+  }
+}
+
+# ------------------------------------------------------------------------------------------------------
+# Role Assignments and creation  on Storage Account
+# ------------------------------------------------------------------------------------------------------
+
+# Create Role Assignment
+resource "azurerm_role_assignment" "test-role-assignment" {
+  scope                = resource_group
+  role_definition_id   = "/subscriptions/{subscription-id}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+  principal_id         = "{user-or-group-object-id}"
+  principal_type       = "User"
+  {{#if tags}}
+  tags = {{tags}}
+  {{/if}}
+}
+  }
+}
+
+
+
+# Storage Blob Data Owner Role Assignment
+resource "azurerm_role_assignment" "uatstoragedzt01_storage_owner" {
+  scope                = azurerm_storage_account.uatstoragedzt01.id
+  role_definition_id   = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
+  principal_id         = data.azurerm_client_config.current.object_id
+  principal_type       = "User"
+}
+
+# Storage Blob Data Contributor Role Assignment  
+resource "azurerm_role_assignment" "uatstoragedzt01_storage_contributor" {
+  scope                = azurerm_storage_account.uatstoragedzt01.id
+  role_definition_id   = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+  principal_id         = data.azurerm_client_config.current.object_id
+  principal_type       = "User"
+}
+
+# Storage Account Contributor Role Assignment
+resource "azurerm_role_assignment" "uatstoragedzt01_storage_account_contributor" {
+  scope                = azurerm_storage_account.uatstoragedzt01.id
+  role_definition_id   = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/17d1049b-9a84-46fb-8f53-869881c3d3ab"
+  principal_id         = data.azurerm_client_config.current.object_id
+  principal_type       = "User"
+}
+
+# Storage Account Reader Role Assignment
+resource "azurerm_role_assignment" "uatstoragedzt01_storage_reader" {
+  scope                = azurerm_storage_account.uatstoragedzt01.id
+  role_definition_id   = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7"
+  principal_id         = data.azurerm_client_config.current.object_id
+  principal_type       = "User"
+}

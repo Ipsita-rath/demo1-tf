@@ -1,11 +1,12 @@
 import { apiRequest } from "./queryClient";
 import type { TerraformResource } from "@/types/terraform";
 
-export async function generateTerraformCode(resources: TerraformResource[], terraformToken?: string, usePrivateModules?: boolean) {
+export async function generateTerraformCode(resources: TerraformResource[], terraformToken?: string, usePrivateModules?: boolean, globalConfig?: any) {
   const response = await apiRequest('POST', '/api/terraform/generate-code', {
     resources,
     terraformToken,
     usePrivateModules,
+    globalConfig,
   });
   return response.json();
 }

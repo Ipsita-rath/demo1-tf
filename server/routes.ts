@@ -114,8 +114,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Server - Generate code with globalConfig:', globalConfig);
       
+      // Ensure globalConfig has proper values from resources if not provided
+      let finalGlobalConfig = globalConfig;
+      if (!finalGlobalConfig) {
+        // Extract basic config from resources if needed
+        finalGlobalConfig = {
+          projectName: 'iim',
+          environment: 'nonprod',
+          region: 'Central US',
+          location: 'Central US'
+        };
+        console.log('Using default globalConfig:', finalGlobalConfig);
+      }
+      
       // Generate code with remote GitHub modules
-      const result = await generateTerraformCodeWithValidation(resources, terraformToken, globalConfig);
+      const result = await generateTerraformCodeWithValidation(resources, terraformToken, finalGlobalConfig);
       res.json({
         ...result,
         globalConfig,

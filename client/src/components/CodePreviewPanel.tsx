@@ -12,18 +12,19 @@ import type { TerraformResource } from "@/types/terraform";
 
 interface CodePreviewPanelProps {
   resources: TerraformResource[];
+  globalConfig?: any;
   activeTab: 'code' | 'deployment' | 'logs';
   onTabChange: (tab: 'code' | 'deployment' | 'logs') => void;
   onClose?: () => void;
 }
 
-export default function CodePreviewPanel({ resources, activeTab, onTabChange, onClose }: CodePreviewPanelProps) {
+export default function CodePreviewPanel({ resources, globalConfig, activeTab, onTabChange, onClose }: CodePreviewPanelProps) {
   const [deploymentProgress, setDeploymentProgress] = useState(0);
   const [deploymentStatus, setDeploymentStatus] = useState<'ready' | 'planning' | 'applying' | 'completed' | 'failed'>('ready');
   const { toast } = useToast();
 
   const { data: generatedCode, isLoading: isGenerating } = useQuery({
-    queryKey: ['/api/terraform/generate-code', resources],
+    queryKey: ['/api/terraform/generate-code', resources, globalConfig],
     queryFn: async () => {
       if (resources.length === 0) return { code: '' };
       
@@ -31,7 +32,7 @@ export default function CodePreviewPanel({ resources, activeTab, onTabChange, on
       const terraformToken = localStorage.getItem('terraformToken');
       const usePrivateModules = localStorage.getItem('usePrivateModules') === 'true';
       
-      return generateTerraformCode(resources, terraformToken || undefined, usePrivateModules);
+      return generateTerraformCode(resources, terraformToken || undefined, usePrivateModules, globalConfig);
     },
     enabled: resources.length > 0,
   });

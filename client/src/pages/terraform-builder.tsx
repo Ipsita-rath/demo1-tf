@@ -1017,6 +1017,7 @@ console.log(globalSettings);
                       <div className="h-full">
                         <CodePreviewPanel 
                           resources={resources}
+                          globalConfig={globalSettings}
                           activeTab={activeBottomTab}
                           onTabChange={setActiveBottomTab}
                           onClose={() => setShowCodePreview(false)}

@@ -173,47 +173,89 @@ export async function generateTerraformCodeWithValidation(
 
 // Generate the standard resource group module that all resources will reference
 function generateStandardResourceGroupModule(resourceGroupResource?: TerraformResource, globalConfig?: any): string {
-  // Use global config values first, then resource-specific values, then defaults
-  const name = globalConfig?.resourceGroupName || resourceGroupResource?.config?.name || resourceGroupResource?.name || "rg-inid-dev-eastus-01";
-  const location = globalConfig?.location || resourceGroupResource?.config?.location || "East US";
-  const tags = globalConfig?.tags || resourceGroupResource?.config?.tags || {};
+  // Use proper Azure naming from globalConfig
+  const projectName = globalConfig?.projectName || 'iim';
+  const environment = globalConfig?.environment || 'nonprod';
+  const region = globalConfig?.region || 'Central US';
+  
+  // Convert region to short format
+  const getShortRegionName = (region: string) => {
+    const regionMap: { [key: string]: string } = {
+      'East US': 'eastus',
+      'East US 2': 'eastus2',
+      'West US': 'westus',
+      'West US 2': 'westus2',
+      'Central US': 'centralus',
+      'North Central US': 'northcentralus',
+      'South Central US': 'southcentralus',
+      'West Central US': 'westcentralus'
+    };
+    return regionMap[region] || 'centralus';
+  };
+  
+  const shortRegion = getShortRegionName(region);
+  const name = `rg-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+  const location = globalConfig?.location || region || "Central US";
+  
+  // Use globalConfig tags if available
+  const defaultTags = {
+    Environment: environment === "nonprod" ? "Non-Prod" : 
+                environment === "dev" ? "Dev" :
+                environment === "test" ? "Test" :
+                environment === "prod" ? "Prod" : environment,
+    Project: projectName
+  };
+  
+  const tags = { ...defaultTags, ...(globalConfig?.tags || {}) };
   
   console.log('generateStandardResourceGroupModule - name:', name, 'location:', location);
   
-  // Only include tags if they exist
-  let tagsLine = '';
-  if (Object.keys(tags).length > 0) {
-    const formattedTags = `{${Object.entries(tags).map(([key, value]) => `"${key}":"${value}"`).join(',')}}`;
-    tagsLine = `\n  tags = ${formattedTags}`;
-  }
+  // Format tags properly
+  const formattedTags = Object.entries(tags).map(([key, value]) => `    ${key}       = "${value}"`).join('\n');
   
   return `module "resource_group" {
-  source = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
-  name = "${name}"
-  location = "${location}"${tagsLine}
+  source   = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
+  name     = "${name}"
+  location = "${location}"
+
+  tags = {
+${formattedTags}
+  }
 }`;
 }
 
 // Generate the VNet resource group module for virtual network resources
 function generateVNetResourceGroupModule(vnetResourceGroup?: TerraformResource, globalConfig?: any): string {
-  // Use VNet-specific naming pattern
-  const name = vnetResourceGroup?.config?.name || vnetResourceGroup?.name || generateVNetResourceGroupName(globalConfig);
-  const location = globalConfig?.location || vnetResourceGroup?.config?.location || "East US";
-  const tags = globalConfig?.tags || vnetResourceGroup?.config?.tags || {};
+  // Use proper Azure naming from globalConfig for VNet resource group
+  const projectName = globalConfig?.projectName || 'iim';
+  const environment = globalConfig?.environment || 'nonprod';
+  const region = globalConfig?.region || 'Central US';
+  
+  // Convert region to short format
+  const getShortRegionName = (region: string) => {
+    const regionMap: { [key: string]: string } = {
+      'East US': 'eastus',
+      'East US 2': 'eastus2',
+      'West US': 'westus',
+      'West US 2': 'westus2',
+      'Central US': 'centralus',
+      'North Central US': 'northcentralus',
+      'South Central US': 'southcentralus',
+      'West Central US': 'westcentralus'
+    };
+    return regionMap[region] || 'centralus';
+  };
+  
+  const shortRegion = getShortRegionName(region);
+  const name = `rg-vnet-${shortRegion}-${environment}-01`;
+  const location = globalConfig?.location || region || "Central US";
   
   console.log('generateVNetResourceGroupModule - name:', name, 'location:', location);
   
-  // Only include tags if they exist
-  let tagsLine = '';
-  if (Object.keys(tags).length > 0) {
-    const formattedTags = `{${Object.entries(tags).map(([key, value]) => `"${key}":"${value}"`).join(',')}}`;
-    tagsLine = `\n  tags = ${formattedTags}`;
-  }
-  
   return `module "vnet_resource_group" {
-  source = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
-  name = "${name}"
-  location = "${location}"${tagsLine}
+  source   = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
+  name     = "${name}"
+  location = "${location}"
 }`;
 }
 
@@ -324,6 +366,28 @@ function generateAzureResourceName(resourceType: string, globalConfig?: any): st
     default:
       return `${resourceType.replace(/_/g, '')}-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
   }
+}
+
+// Extract globalConfig from resources if not provided
+function extractGlobalConfigFromResources(resources: TerraformResource[]): any {
+  const defaultConfig = {
+    projectName: 'iim',
+    environment: 'nonprod',
+    region: 'Central US',
+    location: 'Central US'
+  };
+
+  // Try to extract from resource configurations
+  for (const resource of resources) {
+    if (resource.config) {
+      if (resource.config.projectName) defaultConfig.projectName = resource.config.projectName;
+      if (resource.config.environment) defaultConfig.environment = resource.config.environment;
+      if (resource.config.region) defaultConfig.region = resource.config.region;
+      if (resource.config.location) defaultConfig.location = resource.config.location;
+    }
+  }
+
+  return defaultConfig;
 }
 
 function sortResourcesByDependencies(resources: TerraformResource[]): TerraformResource[] {
