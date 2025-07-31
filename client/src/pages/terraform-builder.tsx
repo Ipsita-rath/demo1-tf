@@ -1058,6 +1058,7 @@ console.log(globalSettings);
                           onResourceUpdate={handleResourceUpdate}
                           onClose={() => setSelectedResource(null)}
                           allResources={resources}
+                          globalConfig={globalSettings}
                         />
                       </div>
                     ) : (

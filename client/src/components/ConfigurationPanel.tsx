@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { X, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import type { TerraformResource } from "@/types/terraform";
 import { incrementRoleAssignmentCount } from "../utils/roleAssignmentStorage";
-import { validateAzureName, getResourceNamingRule, generateSuggestedName } from "@/utils/azureNamingRules";
+import { validateAzureName, getResourceNamingRule, generateSuggestedName, generateAzureResourceName } from "@/utils/azureNamingRules";
 
 const AZURE_REGIONS = [
   { value: "eastus", label: "East US" },
@@ -53,7 +53,7 @@ interface ConfigurationPanelProps {
   onResourceUpdate: (resource: TerraformResource) => void;
   onClose: () => void;
   allResources?: TerraformResource[];
-
+  globalConfig?: any;
   configurationMode?: "subscription" | "resource_group" | "resource" | "role_assignment";
   selectedResourceGroup?: string;
 }
@@ -64,6 +64,7 @@ export default function ConfigurationPanel({
   onResourceUpdate,
   onClose,
   allResources = [],
+  globalConfig,
   configurationMode,
   selectedResourceGroup
 }: ConfigurationPanelProps) { 
@@ -80,11 +81,19 @@ export default function ConfigurationPanel({
   // Update local state when resource prop changes (e.g., after global settings are applied)
   useEffect(() => {
     setConfig(resource.config);
-    setName(resource.name);
+    
+    // Generate proper resource name using globalConfig if available and name is not set or is default
+    let resourceName = resource.name;
+    if (globalConfig && (!resource.name || resource.name === resource.type || resource.config?.name !== resource.name)) {
+      resourceName = generateAzureResourceName(resource.type, globalConfig);
+      console.log(`Generated name for ${resource.type}:`, resourceName, 'using globalConfig:', globalConfig);
+    }
+    
+    setName(resourceName);
     // Validate the initial name
-    const validation = validateAzureName(resource.name, resource.type);
+    const validation = validateAzureName(resourceName, resource.type);
     setNameValidation(validation);
-  }, [resource]);
+  }, [resource, globalConfig]);
 
   // Validate resource name using Azure naming rules
   const handleNameChange = (newName: string) => {
@@ -95,7 +104,10 @@ export default function ConfigurationPanel({
 
   // Generate suggested name if current name is invalid
   const generateSuggestion = () => {
-    const suggested = generateSuggestedName(resource.type, name);
+    // Use globalConfig-based naming if available, otherwise fall back to the old method
+    const suggested = globalConfig 
+      ? generateAzureResourceName(resource.type, globalConfig)
+      : generateSuggestedName(resource.type, name);
     setName(suggested);
     const validation = validateAzureName(suggested, resource.type);
     setNameValidation(validation);

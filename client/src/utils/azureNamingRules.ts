@@ -372,3 +372,100 @@ export function generateSuggestedName(resourceType: string, baseName: string): s
 
   return suggestedName;
 }
+
+// Generate Azure resource names following naming conventions with globalConfig
+export function generateAzureResourceName(resourceType: string, globalConfig?: any): string {
+  const projectName = globalConfig?.projectName || 'project';
+  const environment = globalConfig?.environment || 'nonprod';
+  const region = globalConfig?.region || 'Central US';
+  
+  // Convert region to short format
+  const getShortRegionName = (region: string) => {
+    const regionMap: { [key: string]: string } = {
+      'East US': 'eastus',
+      'East US 2': 'eastus2',
+      'West US': 'westus',
+      'West US 2': 'westus2',
+      'Central US': 'centralus',
+      'North Central US': 'northcentralus',
+      'South Central US': 'southcentralus',
+      'West Central US': 'westcentralus',
+      'Canada Central': 'canadacentral',
+      'Canada East': 'canadaeast',
+      'UK South': 'uksouth',
+      'UK West': 'ukwest',
+      'North Europe': 'northeurope',
+      'West Europe': 'westeurope',
+      'France Central': 'francecentral',
+      'Germany West Central': 'germanywestcentral',
+      'Norway East': 'norwayeast',
+      'Switzerland North': 'switzerlandnorth',
+      'Sweden Central': 'swedencentral',
+      'Australia East': 'australiaeast',
+      'Australia Southeast': 'australiasoutheast',
+      'Southeast Asia': 'southeastasia',
+      'East Asia': 'eastasia',
+      'Japan East': 'japaneast',
+      'Japan West': 'japanwest',
+      'Korea Central': 'koreacentral',
+      'South Africa North': 'southafricanorth',
+      'Central India': 'centralindia',
+      'South India': 'southindia',
+      'West India': 'westindia'
+    };
+    return regionMap[region] || 'centralus';
+  };
+
+  const shortRegion = getShortRegionName(region);
+  
+  switch (resourceType) {
+    case 'resource_group':
+      return `rg-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'virtual_network':
+      // Format: vnet-<Project Name>-<Location>-<Environment>-01
+      return `vnet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'subnet':
+      return `snet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'storage_account':
+      // Format: sa<Project Name><Location><Environment>01 (no hyphens, lowercase)
+      return `sa${projectName.toLowerCase()}${shortRegion}${environment}01`.substring(0, 24);
+    case 'key_vault':
+      return `kv-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'network_security_group':
+      return `nsg-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'route_table':
+      return `rt-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'managed_identity':
+      return `id-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'virtual_machine':
+      return `vm-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'app_service':
+      return `app-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'sql_database':
+      return `sqldb-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'ai_studio':
+      return `ais-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'openai':
+      return `oai-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'application_insights':
+      return `appi-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'log_analytics':
+      return `law-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'container_registry':
+      return `cr${projectName.toLowerCase()}${shortRegion}${environment}01`.substring(0, 50);
+    case 'cosmos_db':
+      return `cosmos-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'redis':
+      return `redis-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'event_hub':
+      return `evh-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'functions':
+      return `func-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'api_management':
+      return `apim-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    case 'private_endpoint':
+      return `pe-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+    default:
+      return `${resourceType.replace(/_/g, '')}-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+  }
+}
