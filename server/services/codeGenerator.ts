@@ -120,10 +120,23 @@ export async function generateTerraformCodeWithValidation(
       )
     : resources;
 
-  // Find resource group configuration
-  const resourceGroupResource = cleanResources.find(resource => resource.type === 'resource_group');
+  // Separate resources into regular and VNet resource groups
+  const regularResourceGroups = cleanResources.filter(resource => 
+    resource.type === 'resource_group' && !resource.name.startsWith('rg-vnet-')
+  );
+  const vnetResourceGroups = cleanResources.filter(resource => 
+    resource.type === 'resource_group' && resource.name.startsWith('rg-vnet-')
+  );
 
-  // Filter out azurerm_resource_group (we add our standard one)
+  // Identify VNet-related resources
+  const vnetRelatedResources = cleanResources.filter(resource => 
+    resource.type === 'virtual_network' || 
+    resource.type === 'subnet' || 
+    resource.type === 'network_security_group' || 
+    resource.type === 'route_table'
+  );
+
+  // Filter out all resource groups (we'll add our own modules)
   const filteredResources = cleanResources.filter(
     resource => resource.type !== 'azurerm_resource_group' && resource.type !== 'resource_group'
   );
@@ -131,13 +144,20 @@ export async function generateTerraformCodeWithValidation(
   // Start code with terraform provider
   let code = TERRAFORM_PROVIDER_TEMPLATE;
 
-  // Add standard RG if needed
-  if (filteredResources.length > 0 || resourceGroupResource) {
-    code += '\n\n' + generateStandardResourceGroupModule(resourceGroupResource, globalConfig);
+  // Add standard resource group module if needed
+  const regularResourceGroup = regularResourceGroups[0];
+  if (filteredResources.some(r => !vnetRelatedResources.includes(r)) || regularResourceGroup) {
+    code += '\n\n' + generateStandardResourceGroupModule(regularResourceGroup, globalConfig);
+  }
+
+  // Add VNet resource group module if needed
+  const vnetResourceGroup = vnetResourceGroups[0];
+  if (vnetRelatedResources.length > 0 || vnetResourceGroup) {
+    code += '\n\n' + generateVNetResourceGroupModule(vnetResourceGroup, globalConfig);
   }
 
   for (const resource of filteredResources) {
-    const resourceCode = generateResourceCode(resource, useRemoteModules, globalConfig);
+    const resourceCode = generateResourceCode(resource, useRemoteModules, globalConfig, vnetRelatedResources);
     if (resourceCode) {
       code += '\n\n' + resourceCode;
     }
@@ -174,6 +194,88 @@ function generateStandardResourceGroupModule(resourceGroupResource?: TerraformRe
 }`;
 }
 
+// Generate the VNet resource group module for virtual network resources
+function generateVNetResourceGroupModule(vnetResourceGroup?: TerraformResource, globalConfig?: any): string {
+  // Use VNet-specific naming pattern
+  const name = vnetResourceGroup?.config?.name || vnetResourceGroup?.name || generateVNetResourceGroupName(globalConfig);
+  const location = globalConfig?.location || vnetResourceGroup?.config?.location || "East US";
+  const tags = globalConfig?.tags || vnetResourceGroup?.config?.tags || {};
+  
+  console.log('generateVNetResourceGroupModule - name:', name, 'location:', location);
+  
+  // Only include tags if they exist
+  let tagsLine = '';
+  if (Object.keys(tags).length > 0) {
+    const formattedTags = `{${Object.entries(tags).map(([key, value]) => `"${key}":"${value}"`).join(',')}}`;
+    tagsLine = `\n  tags = ${formattedTags}`;
+  }
+  
+  return `module "vnet_resource_group" {
+  source = "git::https://github.com/mukeshbharathigeakminds/terraform-azurerm-landing-zone.git//modules/resource_group"
+  name = "${name}"
+  location = "${location}"${tagsLine}
+}`;
+}
+
+// Generate VNet resource group name with proper format
+function generateVNetResourceGroupName(globalConfig?: any): string {
+  const projectName = globalConfig?.projectName || 'project';
+  const environment = globalConfig?.environment || 'nonprod';
+  const region = globalConfig?.region || 'Central US';
+  
+  // Convert region to short format
+  const getShortRegionName = (region: string) => {
+    const regionMap: { [key: string]: string } = {
+      'East US': 'eastus',
+      'East US 2': 'eastus2',
+      'West US': 'westus',
+      'West US 2': 'westus2',
+      'West US 3': 'westus3',
+      'Central US': 'centralus',
+      'North Central US': 'northcentralus',
+      'South Central US': 'southcentralus',
+      'West Central US': 'westcentralus',
+      'Canada Central': 'canadacentral',
+      'Canada East': 'canadaeast',
+      'UK South': 'uksouth',
+      'UK West': 'ukwest',
+      'North Europe': 'northeurope',
+      'West Europe': 'westeurope',
+      'France Central': 'francecentral',
+      'France South': 'francesouth',
+      'Germany West Central': 'germanywestcentral',
+      'Germany North': 'germanynorth',
+      'Switzerland North': 'switzerlandnorth',
+      'Switzerland West': 'switzerlandwest',
+      'Norway East': 'norwayeast',
+      'Norway West': 'norwaywest',
+      'Southeast Asia': 'southeastasia',
+      'East Asia': 'eastasia',
+      'Australia East': 'australiaeast',
+      'Australia Southeast': 'australiasoutheast',
+      'Australia Central': 'australiacentral',
+      'Australia Central 2': 'australiacentral2',
+      'Japan East': 'japaneast',
+      'Japan West': 'japanwest',
+      'Korea Central': 'koreacentral',
+      'Korea South': 'koreasouth',
+      'South India': 'southindia',
+      'Central India': 'centralindia',
+      'West India': 'westindia',
+      'Brazil South': 'brazilsouth',
+      'Brazil Southeast': 'brazilsoutheast',
+      'South Africa North': 'southafricanorth',
+      'South Africa West': 'southafricawest',
+      'UAE North': 'uaenorth',
+      'UAE Central': 'uaecentral'
+    };
+    return regionMap[region] || 'centralus';
+  };
+  
+  const shortRegion = getShortRegionName(region);
+  return `rg-vnet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
+}
+
 function sortResourcesByDependencies(resources: TerraformResource[]): TerraformResource[] {
   const resourceGroups = resources.filter(r => r.type === 'azurerm_resource_group');
   const others = resources.filter(r => r.type !== 'azurerm_resource_group');
@@ -184,14 +286,20 @@ function sortResourcesByDependencies(resources: TerraformResource[]): TerraformR
 
 
 
-function generateResourceCode(resource: TerraformResource, useRemoteModules: boolean = true, globalConfig?: any): string {
+function generateResourceCode(resource: TerraformResource, useRemoteModules: boolean = true, globalConfig?: any, vnetRelatedResources?: TerraformResource[]): string {
   const { type, name, config } = resource;
   
   // Use the configured name from the Resource Name input field, fallback to default name
   const resourceName = config.name || name;
   
-  // Get global configuration values
-  const resourceGroupName = globalConfig?.resourceGroupName || 'module.resource_group.name';
+  // Determine which resource group to use based on resource type
+  const isVNetRelated = vnetRelatedResources?.some(vr => vr.id === resource.id) || 
+    resource.type === 'virtual_network' || 
+    resource.type === 'subnet' || 
+    resource.type === 'network_security_group' || 
+    resource.type === 'route_table';
+    
+  const resourceGroupName = isVNetRelated ? 'module.vnet_resource_group.name' : 'module.resource_group.name';
   const location = globalConfig?.location || config.location || 'East US';
   
   console.log('generateResourceCode - resourceName:', resourceName, 'resourceGroupName:', resourceGroupName, 'location:', location);
