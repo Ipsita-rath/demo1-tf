@@ -1,0 +1,78 @@
+Requirement:
+Every Azure resource (like Key Vault, Managed Identity, etc.) must have a resource name following this convention:
+php-template
+CopyEdit
+<short-code>-<projectCode>-<environment>-<region>-<instanceNumber>
+
+📘 Example:
+
+Key Vault → kv-inid-dev-eastus-01
+
+
+Virtual Network → vnet-inid-dev-eastus-01
+
+
+Storage Account → stiniddev01 (Note: storage account has special rules — see below)
+
+
+🔧 Global Settings Used:
+These values come from global configuration (saved in localStorage or passed to generateSuggestedName()):
+
+
+projectCode (e.g., "inid")
+
+
+environment (e.g., "dev")
+
+
+region (e.g., "eastus")
+
+
+instanceNumber (e.g., "01")
+
+
+📋 Naming Rules (Per Service):
+Please refer to the following list of short codes and naming rules for each Azure resource:
+json
+CopyEdit
+{
+  "kv": { "resource": "Key Vault", "rules": "3–24 chars, lowercase only, alphanumeric, no dashes" },
+  "mi": { "resource": "Managed Identity", "rules": "1–128 chars, alphanumeric, hyphens allowed" },
+  "pe": { "resource": "Private Endpoint", "rules": "1–80 chars, alphanumeric, hyphens allowed" },
+  "ra": { "resource": "Role Assignment", "rules": "No name required (ID-based)" },
+  "rd": { "resource": "Role Definition", "rules": "No name required (GUID only)" },
+  "aadg": { "resource": "Azure AD Group", "rules": "1–256 chars, letters/numbers/specials allowed" },
+  "aadgm": { "resource": "AD Group Member", "rules": "Not named directly" },
+  "st": { "resource": "Storage Account", "rules": "3–24 chars, lowercase only, no dashes, alphanumeric only" },
+  "acr": { "resource": "Container Registry", "rules": "5–50 chars, lowercase, no dashes" },
+  "vnet": { "resource": "Virtual Network", "rules": "1–64 chars, alphanumeric, hyphens allowed" },
+  "snet": { "resource": "Subnet", "rules": "1–80 chars, alphanumeric, hyphens allowed" },
+  "nsg": { "resource": "Network Security Group", "rules": "1–80 chars, alphanumeric, hyphens allowed" },
+  "rt": { "resource": "Route Table", "rules": "1–80 chars, alphanumeric, hyphens allowed" },
+  "app": { "resource": "App Service", "rules": "2–60 chars, lowercase, alphanumeric, hyphens allowed" },
+  "func": { "resource": "Function App", "rules": "1–60 chars, lowercase, alphanumeric, hyphens allowed" },
+  "sql": { "resource": "SQL Database", "rules": "1–128 chars, alphanumeric only" },
+  "cosmos": { "resource": "Cosmos DB", "rules": "3–44 chars, lowercase, alphanumeric, hyphens allowed" },
+  "redis": { "resource": "Redis Cache", "rules": "1–63 chars, lowercase, alphanumeric, hyphens allowed" },
+  "ai": { "resource": "AI Studio", "rules": "1–80 chars, alphanumeric, hyphens allowed" },
+  "openai": { "resource": "OpenAI", "rules": "1–64 chars, lowercase, alphanumeric, hyphens allowed" },
+  "appi": { "resource": "Application Insights", "rules": "1–256 chars, alphanumeric, hyphens allowed" },
+  "log": { "resource": "Log Analytics Workspace", "rules": "4–63 chars, alphanumeric, hyphens allowed" },
+  "wb": { "resource": "Azure Workbooks", "rules": "Friendly name only" },
+  "apim": { "resource": "API Management", "rules": "1–50 chars, lowercase, alphanumeric, hyphens allowed" },
+  "eh": { "resource": "Event Hub", "rules": "1–50 chars, lowercase, alphanumeric, hyphens allowed" },
+  "rg": { "resource": "Resource Group", "rules": "1–90 chars, letters/numbers/underscores/periods/hyphens/parentheses, cannot end with period" }
+}
+
+🎯 What to Do:
+
+Implement logic in generateSuggestedName(resourceType) to return the correct name based on short code and global config.
+
+
+Use per-resource naming rules for length and character validation in validateAzureName(resourceType).
+
+
+When a user drags a service to the canvas, auto-generate the resource name.
+
+
+Ensure the right-side config panel shows this generated name.

@@ -1,0 +1,45 @@
+### Enforce Azure Resource Naming Convention
+
+Implement a standardized naming convention for all Azure resources created through the Terraform UI.
+
+Resource names must be generated dynamically using the following format:
+`<short_code>-<project_code>-<environment>-<region>-<instance_number>`
+
+🔹 **Example:** For a Key Vault in the `inid` project, `dev` environment, `eastus` region, and instance `01`, the name should be:
+`kv-inid-dev-eastus-01`
+
+🔹 **For storage accounts** (maximum 24 characters, lowercase only), use the format:
+`st<project_code><environment><instance_number>`
+**Example:** `stiniddev01`
+
+Use the following short codes for each Azure resource type:
+
+| **Azure Resource**      | **Short Code** | **Example Name**            |
+| ----------------------- | -------------- | --------------------------- |
+| Key Vault               | `kv`           | `kv-inid-dev-eastus-01`     |
+| Managed Identity        | `mi`           | `mi-inid-dev-eastus-01`     |
+| Private Endpoint        | `pe`           | `pe-inid-dev-eastus-01`     |
+| Role Assignment         | `ra`           | `ra-inid-dev-eastus-01`     |
+| Role Definition         | `rd`           | `rd-inid-dev-eastus-01`     |
+| Azure AD Group          | `aadg`         | `aadg-inid-dev-eastus-01`   |
+| AD Group Member         | `aadgm`        | `aadgm-inid-dev-eastus-01`  |
+| Storage Account         | `st`           | `stiniddev01`               |
+| Container Registry      | `acr`          | `acr-inid-dev-eastus-01`    |
+| Virtual Network         | `vnet`         | `vnet-inid-dev-eastus-01`   |
+| Subnet                  | `snet`         | `snet-inid-dev-eastus-01`   |
+| Network Security Group  | `nsg`          | `nsg-inid-dev-eastus-01`    |
+| Route Table             | `rt`           | `rt-inid-dev-eastus-01`     |
+| App Service             | `app`          | `app-inid-dev-eastus-01`    |
+| Function App            | `func`         | `func-inid-dev-eastus-01`   |
+| SQL Database            | `sql`          | `sql-inid-dev-eastus-01`    |
+| Cosmos DB               | `cosmos`       | `cosmos-inid-dev-eastus-01` |
+| Redis Cache             | `redis`        | `redis-inid-dev-eastus-01`  |
+| AI Studio               | `ai`           | `ai-inid-dev-eastus-01`     |
+| OpenAI                  | `openai`       | `openai-inid-dev-eastus-01` |
+| Application Insights    | `appi`         | `appi-inid-dev-eastus-01`   |
+| Log Analytics Workspace | `log`          | `log-inid-dev-eastus-01`    |
+| Azure Workbooks         | `wb`           | `wb-inid-dev-eastus-01`     |
+| API Management          | `apim`         | `apim-inid-dev-eastus-01`   |
+| Event Hub               | `eh`           | `eh-inid-dev-eastus-01`     |
+| Resource Group          | `rg`           | `rg-inid-dev-eastus-01`     |
+

@@ -1,0 +1,59 @@
+{
+  "include": [
+    "app/**/*",
+    "next-env.d.ts",
+    "server/**/*",
+    "shared/**/*",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "client",
+    "**/*.test.ts"
+  ],
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": true,
+    "module": "ESNext",
+    "strict": true,
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ],
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "target": "es5",
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./app/*"
+      ],
+      "@shared/*": [
+        "./shared/*"
+      ],
+      "@assets/*": [
+        "./attached_assets/*"
+      ]
+    }
+  }
+}

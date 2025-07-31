@@ -1,0 +1,89 @@
+Global error caught: ErrorEvent
+handleError @ terraform-builder.tsx:881Understand this error
+chunk-WERSD76P.js?v=4883198b:521 Warning: Cannot update a component (`TerraformBuilder`) while rendering a different component (`ResourceCard`). To locate the bad setState() call inside `ResourceCard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at ResourceCard (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/src/components/ResourceCard.tsx:24:40)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Canvas (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/src/components/Canvas.tsx:26:3)
+    at div
+    at div
+    at div
+    at PanelWithForwardedRef (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-resizable-panels.js?v=4883198b:41:3)
+    at forwardRef(Panel)
+    at div
+    at PanelGroupWithForwardedRef (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-resizable-panels.js?v=4883198b:1440:3)
+    at forwardRef(PanelGroup)
+    at div
+    at div
+    at DndProvider2 (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-dnd.js?v=4883198b:1505:9)
+    at TerraformBuilder (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/src/pages/terraform-builder.tsx:73:37)
+    at Route (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4883198b:323:16)
+    at Switch (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4883198b:379:17)
+    at Router
+    at Provider (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PLT6GTVM.js?v=4883198b:38:15)
+    at TooltipProvider (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=4883198b:62:5)
+    at ThemeProvider (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/src/contexts/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4883198b:2805:3)
+    at App (https://63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/src/App.tsx?v=Gnrj2MDNrqa5p3vWQm42l:55:3)
+printWarning @ chunk-WERSD76P.js?v=4883198b:521Understand this error
+ResourceCard.tsx:90 Uncaught TypeError: Cannot read properties of undefined (reading 'length')
+    at ResourceCard (ResourceCard.tsx:90:34)
+    at renderWithHooks (chunk-WERSD76P.js?v=4883198b:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=4883198b:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=4883198b:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=4883198b:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=4883198b:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=4883198b:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=4883198b:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=4883198b:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=4883198b:19137:13)Understand this error
+terraform-builder.tsx:881 Global error caught: ErrorEvent
+handleError @ terraform-builder.tsx:881Understand this error
+ResourceCard.tsx:90 Uncaught TypeError: Cannot read properties of undefined (reading 'length')
+    at ResourceCard (ResourceCard.tsx:90:34)
+    at renderWithHooks (chunk-WERSD76P.js?v=4883198b:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=4883198b:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=4883198b:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=4883198b:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=4883198b:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=4883198b:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=4883198b:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=4883198b:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=4883198b:19137:13)Understand this error
+terraform-builder.tsx:881 Global error caught: ErrorEvent
+handleError @ terraform-builder.tsx:881Understand this error
+ResourceCard.tsx:90 Uncaught TypeError: Cannot read properties of undefined (reading 'length')
+    at ResourceCard (ResourceCard.tsx:90:34)
+    at renderWithHooks (chunk-WERSD76P.js?v=4883198b:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=4883198b:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=4883198b:15914:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=4883198b:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=4883198b:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=4883198b:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=4883198b:19116:15)
+    at performConcurrentWorkOnRoot (chunk-WERSD76P.js?v=4883198b:18678:83)
+    at workLoop (chunk-WERSD76P.js?v=4883198b:197:42)Understand this error
+terraform-builder.tsx:881 Global error caught: ErrorEvent
+handleError @ terraform-builder.tsx:881Understand this error
+ResourceCard.tsx:90 Uncaught TypeError: Cannot read properties of undefined (reading 'length')
+    at ResourceCard (ResourceCard.tsx:90:34)
+    at renderWithHooks (chunk-WERSD76P.js?v=4883198b:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=4883198b:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=4883198b:15914:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=4883198b:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=4883198b:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=4883198b:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=4883198b:19116:15)
+    at performConcurrentWorkOnRoot (chunk-WERSD76P.js?v=4883198b:18678:83)
+    at workLoop (chunk-WERSD76P.js?v=4883198b:197:42)Understand this error
+63324e71-8c84-4102-ac17-a7691f55d583-00-1yiq0j1vwn48o.pike.replit.dev/:1  Failed to load resource: the server responded with a status of 503 (Service Unavailable)Understand this error

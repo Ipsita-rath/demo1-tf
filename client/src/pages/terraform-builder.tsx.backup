@@ -1,0 +1,990 @@
+import { useState, useEffect } from "react";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { DndProvider } from "react-dnd";
+import { useLocation } from "wouter";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2, Save } from "lucide-react";
+import Header from "@/components/Header";
+import ResourceSidebar from "@/components/ResourceSidebar";
+import Canvas from "@/components/Canvas";
+import ConfigurationPanel from "@/components/ConfigurationPanel";
+import CodePreviewPanel from "@/components/CodePreviewPanel";
+import GlobalInfoModal from "@/components/GlobalInfoModal";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import type { TerraformResource, LandingZone } from "@/types/terraform";
+
+const AZURE_REGIONS = [
+  { value: "eastus", label: "East US" },
+  { value: "eastus2", label: "East US 2" },
+  { value: "westus", label: "West US" },
+  { value: "westus2", label: "West US 2" },
+  { value: "centralus", label: "Central US" },
+  { value: "northcentralus", label: "North Central US" },
+  { value: "southcentralus", label: "South Central US" },
+  { value: "westcentralus", label: "West Central US" },
+  { value: "canadacentral", label: "Canada Central" },
+  { value: "canadaeast", label: "Canada East" },
+  { value: "brazilsouth", label: "Brazil South" },
+  { value: "northeurope", label: "North Europe" },
+  { value: "westeurope", label: "West Europe" },
+  { value: "uksouth", label: "UK South" },
+  { value: "ukwest", label: "UK West" },
+  { value: "francecentral", label: "France Central" },
+  { value: "germanywestcentral", label: "Germany West Central" },
+  { value: "norwayeast", label: "Norway East" },
+  { value: "switzerlandnorth", label: "Switzerland North" },
+  { value: "swedencentral", label: "Sweden Central" },
+  { value: "australiaeast", label: "Australia East" },
+  { value: "australiasoutheast", label: "Australia Southeast" },
+  { value: "southeastasia", label: "Southeast Asia" },
+  { value: "eastasia", label: "East Asia" },
+  { value: "japaneast", label: "Japan East" },
+  { value: "japanwest", label: "Japan West" },
+  { value: "koreacentral", label: "Korea Central" },
+  { value: "southafricanorth", label: "South Africa North" },
+  { value: "centralindia", label: "Central India" },
+  { value: "southindia", label: "South India" },
+  { value: "westindia", label: "West India" },
+];
+
+export default function TerraformBuilder() {
+  const [resources, setResources] = useState<TerraformResource[]>([]);
+  const [selectedResource, setSelectedResource] = useState<TerraformResource | null>(null);
+  const [showCodePreview, setShowCodePreview] = useState(false);
+  const [activeBottomTab, setActiveBottomTab] = useState<'code' | 'deployment' | 'logs'>('code');
+  const [error, setError] = useState<string | null>(null);
+  const [showGlobalInfo, setShowGlobalInfo] = useState(false);
+  const [selectedLandingZone, setSelectedLandingZone] = useState<string | undefined>(undefined);
+  const [showConfigurationPanel, setShowConfigurationPanel] = useState(false);
+  const [configurationMode, setConfigurationMode] = useState<'subscription' | 'resource_group' | 'resource'>('subscription');
+  const [selectedResourceGroup, setSelectedResourceGroup] = useState<string | null>(null);
+  
+  // Resource Group configuration state
+  const [resourceGroupConfig, setResourceGroupConfig] = useState({
+    subscriptionName: '',
+    resourceGroupName: '',
+    location: '',
+    tags: {} as Record<string, string>
+  });
+  
+  // Undo/Redo state management
+  const [history, setHistory] = useState<TerraformResource[][]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+  const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
+
+  const { socket, isConnected } = useWebSocket();
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  // Global settings helper functions
+  const GLOBAL_SETTINGS_KEY = 'terraform-builder-global-settings';
+  
+  const loadGlobalSettings = () => {
+    try {
+      const saved = localStorage.getItem(GLOBAL_SETTINGS_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error('Error loading global settings:', error);
+      return null;
+    }
+  };
+
+  const saveResourceGroupConfig = (config: typeof resourceGroupConfig) => {
+    // Find the resource group resource and update it
+    const updatedResources = resources.map(resource => {
+      if (resource.type === 'resource_group' && resource.name === selectedResourceGroup) {
+        return {
+          ...resource,
+          config: {
+            ...resource.config,
+            subscriptionName: config.subscriptionName,
+            resourceGroupName: config.resourceGroupName,
+            location: config.location,
+            tags: config.tags
+          }
+        };
+      }
+      return resource;
+    });
+    
+    setResources(updatedResources);
+    toast({
+      title: "Resource Group Updated",
+      description: "Resource group configuration has been saved successfully.",
+    });
+  };
+
+  // TagsEditor component for resource group configuration
+  const TagsEditor = ({ tags, onTagsChange }: { tags: Record<string, string>; onTagsChange: (tags: Record<string, string>) => void; }) => {
+    const addTag = () => {
+      const newTags = { ...tags, '': '' };
+      onTagsChange(newTags);
+    };
+
+    const updateTag = (oldKey: string, newKey: string, value: string) => {
+      const newTags = { ...tags };
+      if (oldKey !== newKey) {
+        delete newTags[oldKey];
+      }
+      newTags[newKey] = value;
+      onTagsChange(newTags);
+    };
+
+    const removeTag = (key: string) => {
+      const newTags = { ...tags };
+      delete newTags[key];
+      onTagsChange(newTags);
+    };
+
+    return (
+      <div className="space-y-2">
+        {Object.entries(tags).map(([key, value]) => (
+          <div key={key} className="flex items-center space-x-2">
+            <Input
+              value={key}
+              onChange={(e) => updateTag(key, e.target.value, value)}
+              placeholder="Key"
+              className="flex-1"
+            />
+            <Input
+              value={value}
+              onChange={(e) => updateTag(key, key, e.target.value)}
+              placeholder="Value"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => removeTag(key)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={addTag}
+          className="text-primary"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Tag
+        </Button>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (socket) {
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'deployment_update') {
+          console.log('Deployment update:', message.data);
+          // Handle deployment status updates
+        }
+      };
+    }
+  }, [socket]);
+
+  // Load global settings and populate resource group config when mode changes
+  useEffect(() => {
+    if (configurationMode === 'resource_group' && selectedResourceGroup) {
+      const globalSettings = loadGlobalSettings();
+      const resourceGroup = resources.find(r => r.type === 'resource_group' && r.name === selectedResourceGroup);
+      
+      setResourceGroupConfig({
+        subscriptionName: resourceGroup?.config?.subscriptionName || globalSettings?.subscriptionName || '',
+        resourceGroupName: resourceGroup?.config?.resourceGroupName || selectedResourceGroup || '',
+        location: resourceGroup?.config?.location || globalSettings?.region || '',
+        tags: resourceGroup?.config?.tags || globalSettings?.tags || {}
+      });
+    }
+  }, [configurationMode, selectedResourceGroup, resources]);
+
+  // Add resources to history when they change (but not during undo/redo)
+  useEffect(() => {
+    if (!isUndoRedoAction) {
+      const newHistory = history.slice(0, currentHistoryIndex + 1);
+      newHistory.push([...resources]);
+      setHistory(newHistory);
+      setCurrentHistoryIndex(newHistory.length - 1);
+    }
+  }, [resources, isUndoRedoAction]);
+
+  // Undo functionality
+  const handleUndo = () => {
+    if (currentHistoryIndex > 0) {
+      setIsUndoRedoAction(true);
+      const previousState = history[currentHistoryIndex - 1];
+      setResources([...previousState]);
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setSelectedResource(null);
+      setTimeout(() => setIsUndoRedoAction(false), 0);
+    }
+  };
+
+  // Redo functionality
+  const handleRedo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      setIsUndoRedoAction(true);
+      const nextState = history[currentHistoryIndex + 1];
+      setResources([...nextState]);
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+      setSelectedResource(null);
+      setTimeout(() => setIsUndoRedoAction(false), 0);
+    }
+  };
+
+  // Add to history helper
+  const addToHistory = (newResources: TerraformResource[]) => {
+    if (!isUndoRedoAction) {
+      const newHistory = history.slice(0, currentHistoryIndex + 1);
+      newHistory.push([...newResources]);
+      setHistory(newHistory);
+      setCurrentHistoryIndex(newHistory.length - 1);
+    }
+  };
+
+  // Check if resource name already exists
+  const isResourceNameExists = (name: string, existingResources: TerraformResource[]) => {
+    return existingResources.some(r => r.name.toLowerCase() === name.toLowerCase());
+  };
+
+  // Generate unique resource name based on existing resources
+  const generateUniqueResourceName = (resourceType: string, existingResources: TerraformResource[]) => {
+    // Get base name for the resource type
+    const getBaseName = (type: string) => {
+      const baseNames: { [key: string]: string } = {
+        'storage_account': 'storageaccount',
+        'virtual_machine': 'vm',
+        'key_vault': 'keyvault',
+        'virtual_network': 'vnet',
+        'network_security_group': 'nsg',
+
+        'app_service': 'app',
+        'sql_database': 'sqldb',
+        'ai_studio': 'aistudio',
+        'api_management': 'apim',
+        'application_insights': 'appinsights',
+        'container_registry': 'acr',
+        'cosmos_db': 'cosmosdb',
+        'event_hub': 'eventhub',
+        'functions': 'func',
+        'log_analytics': 'loganalytics',
+        'managed_identity': 'identity',
+        'openai': 'openai',
+        'private_endpoint': 'privateendpoint',
+        'redis': 'redis',
+        'route_table': 'routetable',
+        'role_assignment': 'roleassignment',
+        'role_definition': 'roledefinition',
+        'subnet': 'subnet',
+        'ad_group': 'adgroup',
+        'ad_group_member': 'adgroupmember',
+        'workbook': 'workbook'
+      };
+      return baseNames[type] || type.replace(/_/g, '');
+    };
+
+    const baseName = getBaseName(resourceType);
+    const existingOfType = existingResources.filter(r => r.type === resourceType);
+    
+    // If no existing resources of this type, use baseName + 1
+    if (existingOfType.length === 0) {
+      return `${baseName}1`;
+    }
+    
+    // Find the highest number used for this resource type
+    let highestNumber = 0;
+    existingOfType.forEach(resource => {
+      const match = resource.name.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1]);
+        if (num > highestNumber) {
+          highestNumber = num;
+        }
+      }
+    });
+    
+    return `${baseName}${highestNumber + 1}`;
+  };
+
+  const handleResourceDrop = (resourceType: string, position: { x: number; y: number }) => {
+    try {
+      console.log('🔄 TERRAFORM BUILDER: handleResourceDrop called with:', resourceType, 'at position:', position);
+      
+      const newResources = [...resources];
+      let resourceGroup: TerraformResource | undefined;
+      
+      // Skip resource group creation if dropping a resource group itself
+      if (resourceType !== 'resource_group') {
+        // For Virtual Network resources, create VNet resource group if it doesn't exist
+        if (resourceType === 'virtual_network' || resourceType === 'subnet' || resourceType === 'network_security_group' || resourceType === 'route_table') {
+          const existingVNetRG = resources.find(r => r.type === 'resource_group' && r.name.startsWith('rg-vnet-'));
+          if (!existingVNetRG) {
+            console.log('🌐 Creating new VNet Resource Group automatically');
+            const vnetResourceGroup = {
+              id: `vnet-resource-group-${Date.now()}`,
+              type: 'resource_group',
+              name: `rg-vnet-${Date.now()}`, // Will be updated by Global Info
+              config: getDefaultConfig('resource_group'),
+              position: { x: position.x - 50, y: position.y - 100 },
+              dependencies: []
+            };
+            newResources.push(vnetResourceGroup);
+            resourceGroup = vnetResourceGroup;
+            console.log('✅ VNet Resource Group created:', vnetResourceGroup.name);
+          } else {
+            resourceGroup = existingVNetRG;
+            console.log('🌐 Using existing VNet Resource Group:', existingVNetRG.name);
+          }
+        } else {
+          // Auto-create regular Resource Group if no Resource Group exists
+          if (!resources.some(r => r.type === 'resource_group' && !r.name.startsWith('rg-vnet-'))) {
+            console.log('📁 Creating new Resource Group automatically');
+            resourceGroup = {
+              id: `resource-group-${Date.now()}`,
+              type: 'resource_group',
+              name: generateUniqueResourceName('resource_group', resources),
+              config: getDefaultConfig('resource_group'),
+              position: { x: position.x - 50, y: position.y - 50 },
+              dependencies: []
+            };
+            newResources.push(resourceGroup);
+            console.log('✅ Resource Group created:', resourceGroup.name);
+          } else {
+            // Use existing regular resource group (not VNet)
+            resourceGroup = resources.find(r => r.type === 'resource_group' && !r.name.startsWith('rg-vnet-'));
+            console.log('📁 Using existing Resource Group:', resourceGroup?.name);
+          }
+        }
+      } else {
+        console.log('📁 Creating standalone Resource Group');
+      }
+      
+      const config = getDefaultConfig(resourceType);
+      console.log('⚙️ Default config for', resourceType, ':', config);
+      
+      // Associate resource with resource group (except for resource_group itself)
+      if (resourceType !== 'resource_group' && resourceGroup) {
+        // For Virtual Network resources, assign to VNet resource group if it exists
+        if (resourceType === 'virtual_network' || resourceType === 'subnet' || resourceType === 'network_security_group' || resourceType === 'route_table') {
+          const vnetResourceGroup = resources.find(r => r.type === 'resource_group' && r.name.startsWith('rg-vnet-'));
+          if (vnetResourceGroup) {
+            config.resourceGroup = vnetResourceGroup.name;
+            console.log('🌐 Associated VNet resource with VNet Resource Group:', vnetResourceGroup.name);
+          } else {
+            config.resourceGroup = resourceGroup.name;
+            console.log('🔗 Associated with default Resource Group:', resourceGroup.name);
+          }
+        } else {
+          config.resourceGroup = resourceGroup.name;
+          console.log('🔗 Associated with Resource Group:', resourceGroup.name);
+        }
+      }
+      
+      // Generate unique name for the new resource
+      const uniqueName = generateUniqueResourceName(resourceType, resources);
+      console.log('🏷️ Generated unique name:', uniqueName);
+      
+      const newResource: TerraformResource = {
+        id: `${resourceType}-${Date.now()}`,
+        type: resourceType,
+        name: uniqueName,
+        config,
+        position,
+        dependencies: [],
+      };
+      
+      console.log('✅ Created new resource:', newResource);
+      console.log('📊 Total resources after drop:', newResources.length);
+      
+      newResources.push(newResource);
+      setResources(newResources);
+      setSelectedResource(newResource);
+      addToHistory(newResources);
+      
+      // Show success notification
+      toast({
+        title: "Resource Added",
+        description: `${resourceType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} "${uniqueName}" has been added to the canvas.`,
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('❌ Error dropping resource:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to create ${resourceType}: ${errorMessage}`);
+      toast({
+        title: "Resource Drop Error",
+        description: `Failed to create ${resourceType}: ${errorMessage}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleResourceSelect = (resource: TerraformResource) => {
+    setSelectedResource(resource);
+  };
+
+  const handleResourceUpdate = (updatedResource: TerraformResource) => {
+    // Check for duplicate names (excluding the current resource being updated)
+    const isDuplicate = resources.some(r => 
+      r.id !== updatedResource.id && 
+      r.name.toLowerCase() === updatedResource.name.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate Resource Name",
+        description: `A resource with the name "${updatedResource.name}" already exists. Please choose a different name.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setResources(resources.map(r => 
+      r.id === updatedResource.id ? updatedResource : r
+    ));
+    setSelectedResource(updatedResource);
+  };
+
+  const handleResourceDelete = (resourceId: string) => {
+    setResources(resources.filter(r => r.id !== resourceId));
+    if (selectedResource?.id === resourceId) {
+      setSelectedResource(null);
+    }
+  };
+
+  const handleResourceMove = (resourceId: string, position: { x: number; y: number }) => {
+    setResources(resources.map(r => 
+      r.id === resourceId ? { ...r, position } : r
+    ));
+  };
+
+  const handleLandingZoneSelect = (landingZone: LandingZone) => {
+    // Convert landing zone resources to TerraformResource format
+    const terraformResources: TerraformResource[] = landingZone.resources.map((lzResource, index) => ({
+      id: `${lzResource.type}-${Date.now()}-${index}`,
+      type: lzResource.type,
+      name: lzResource.name,
+      config: {
+        ...lzResource.field_state,
+        resourceGroup: lzResource.resource_group || (lzResource.type === 'resource_group' ? undefined : 'ai-studio-rg')
+      },
+      position: lzResource.position,
+      dependencies: []
+    }));
+    
+    // Replace current resources with landing zone resources
+    setResources(terraformResources);
+    setSelectedResource(null);
+    
+    // Auto-open Global Info modal for Test Landing Zone and AI Studio Landing Zone
+    if (landingZone.id === 'ai_studio_landing_zone' || landingZone.id === 'test_landing_zone') {
+      setSelectedLandingZone(landingZone.id);
+      setShowGlobalInfo(true);
+    }
+    
+    // Auto-select the first resource for configuration
+    if (terraformResources.length > 0) {
+      setSelectedResource(terraformResources[0]);
+    }
+  };
+
+  // Handle Configuration Panel trigger from Global Info Modal
+  const handleConfigurationPanelTrigger = () => {
+    setShowConfigurationPanel(true);
+    setConfigurationMode('subscription');
+    setSelectedResource(null); // Clear any selected resource to show subscription config
+  };
+
+  // Handle resource group card click
+  const handleResourceGroupClick = (resourceGroupName: string) => {
+    setShowConfigurationPanel(true);
+    
+    if (resourceGroupName === 'subscription') {
+      setConfigurationMode('subscription');
+      setSelectedResourceGroup(null);
+    } else {
+      setConfigurationMode('resource_group');
+      setSelectedResourceGroup(resourceGroupName);
+    }
+    
+    setSelectedResource(null); // Clear selected resource when switching modes
+  };
+
+  const getDefaultConfig = (resourceType: string) => {
+    switch (resourceType) {
+      case 'resource_group':
+        return { location: 'East US', tags: { Environment: 'Development' } };
+      case 'key_vault':
+        return { 
+          location: 'East US', 
+          skuName: 'standard', 
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'Key Vault Administrator', 'Key Vault Secrets Officer'],
+          tags: { Environment: 'Development' }
+        };
+      case 'storage_account':
+        return { 
+          location: 'East US', 
+          accountTier: 'Standard', 
+          replicationType: 'LRS', 
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'Storage Blob Data Owner', 'Storage Blob Data Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      case 'virtual_network':
+        return { location: 'East US', addressSpace: ['10.0.0.0/16'], tags: { Environment: 'Development' } };
+      case 'subnet':
+        return { addressPrefixes: ['10.0.1.0/24'] };
+      case 'network_security_group':
+        return { location: 'East US', securityRules: [], tags: { Environment: 'Development' } };
+      case 'virtual_machine':
+        return { 
+          location: 'East US', 
+          size: 'Standard_B2s', 
+          adminUsername: 'azureuser',
+          disablePasswordAuth: true,
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'Virtual Machine Contributor', 'Network Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      case 'app_service':
+        return { location: 'East US', tags: { Environment: 'Development' } };
+      case 'sql_database':
+        return { 
+          location: 'East US', 
+          collation: 'SQL_Latin1_General_CP1_CI_AS', 
+          skuName: 'S0', 
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'SQL DB Contributor', 'SQL Server Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      case 'role_assignment':
+        return { 
+          location: 'East US', 
+          principalType: 'User', 
+          roleDefinitionId: '/subscriptions/{subscription-id}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c',
+          roleName: 'Contributor',
+          principalId: 'data.azurerm_client_config.current.object_id',
+          scope: 'azurerm_resource_group.main.id',
+          availableRoles: [
+            { id: '/subscriptions/{subscription-id}/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635', name: 'Owner' },
+            { id: '/subscriptions/{subscription-id}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c', name: 'Contributor' },
+            { id: '/subscriptions/{subscription-id}/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7', name: 'Reader' }
+          ],
+          tags: { Environment: 'Development' }
+        };
+      case 'role_definition':
+        return { 
+          location: 'East US', 
+          roleName: 'Custom Role', 
+          description: 'Custom role definition',
+          scope: 'azurerm_resource_group.main.id',
+          actions: ['Microsoft.Resources/subscriptions/resourceGroups/read'],
+          notActions: [],
+          tags: { Environment: 'Development' }
+        };
+      case 'ad_group':
+        return { 
+          displayName: 'Azure AD Group', 
+          description: 'Azure Active Directory group for role assignments',
+          groupTypes: ['Unified'],
+          mailEnabled: false,
+          securityEnabled: true,
+          owners: [],
+          members: [],
+          tags: { Environment: 'Development' }
+        };
+      case 'ad_group_member':
+        return { 
+          groupId: 'azuread_group.main.id',
+          memberId: 'data.azuread_client_config.current.object_id',
+          tags: { Environment: 'Development' }
+        };
+      case 'ai_studio':
+        return { 
+          location: 'East US', 
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'AI Developer'],
+          tags: { Environment: 'Development' }
+        };
+      case 'container_registry':
+        return { 
+          location: 'East US', 
+          sku: 'Basic',
+          adminEnabled: false,
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'AcrPush', 'AcrPull'],
+          tags: { Environment: 'Development' }
+        };
+      case 'api_management':
+        return { 
+          location: 'East US', 
+          skuName: 'Developer_1',
+          publisherName: 'API Publisher',
+          publisherEmail: 'admin@company.com',
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'API Management Service Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      case 'managed_identity':
+        return { 
+          location: 'East US', 
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'Managed Identity Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      case 'openai':
+        return { 
+          location: 'East US', 
+          skuName: 'S0',
+          enableRoleAssignments: true,
+          adRoles: ['Owner', 'Contributor', 'Reader', 'Cognitive Services OpenAI Contributor'],
+          tags: { Environment: 'Development' }
+        };
+      default:
+        return { location: 'East US', tags: { Environment: 'Development' } };
+    }
+  };
+
+
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Global error caught:', error);
+      setError(error.message);
+      toast({
+        title: "Application Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [toast]);
+
+  // Global Info handler
+  const handleGlobalInfo = () => {
+    setShowGlobalInfo(true);
+  };
+
+  // Handle resources update from Global Info modal
+  const handleResourcesUpdate = (updatedResources: TerraformResource[]) => {
+    setResources(updatedResources);
+    
+    // Update selectedResource if it exists, to ensure configuration panel shows updated data
+    if (selectedResource) {
+      const updatedSelectedResource = updatedResources.find(r => r.id === selectedResource.id);
+      if (updatedSelectedResource) {
+        setSelectedResource(updatedSelectedResource);
+      }
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Application Error</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
+          <button 
+            onClick={() => {
+              setError(null);
+              setResources([]);
+              setSelectedResource(null);
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Reset Application
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <Header 
+          isConnected={isConnected}
+          onPreviewCode={() => setShowCodePreview(!showCodePreview)}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={currentHistoryIndex > 0}
+          canRedo={currentHistoryIndex < history.length - 1}
+          onGlobalInfo={handleGlobalInfo}
+        />
+        
+        <div className="flex flex-1 overflow-hidden">
+          <PanelGroup direction="horizontal" className="flex-1">
+            <Panel defaultSize={20} minSize={15} maxSize={35}>
+              <div className="h-full overflow-hidden">
+                <ResourceSidebar onLandingZoneSelect={handleLandingZoneSelect} />
+              </div>
+            </Panel>
+            
+            <PanelResizeHandle className="w-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-300 dark:hover:bg-blue-600 cursor-col-resize flex items-center justify-center group relative transition-colors">
+              <div className="w-1 h-12 bg-gray-400 dark:bg-gray-600 group-hover:bg-blue-500 transition-colors rounded-full"></div>
+            </PanelResizeHandle>
+            
+            <Panel defaultSize={selectedResource ? 50 : 80} minSize={50}>
+              <div className="flex flex-col h-full">
+                {showCodePreview ? (
+                  <PanelGroup direction="vertical" className="flex-1">
+                    <Panel defaultSize={60} minSize={40}>
+                      <div className="h-full">
+                        <Canvas 
+                          resources={resources}
+                          onResourceDrop={handleResourceDrop}
+                          onResourceSelect={handleResourceSelect}
+                          onResourceDelete={handleResourceDelete}
+                          onResourceMove={handleResourceMove}
+                          selectedResource={selectedResource}
+                        />
+                      </div>
+                    </Panel>
+                    
+                    <PanelResizeHandle className="h-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-300 dark:hover:bg-blue-600 cursor-row-resize flex items-center justify-center group relative transition-colors">
+                      <div className="h-1 w-12 bg-gray-400 dark:bg-gray-600 group-hover:bg-blue-500 transition-colors rounded-full"></div>
+                    </PanelResizeHandle>
+                    
+                    <Panel defaultSize={40} minSize={30}>
+                      <div className="h-full">
+                        <CodePreviewPanel 
+                          resources={resources}
+                          activeTab={activeBottomTab}
+                          onTabChange={setActiveBottomTab}
+                          onClose={() => setShowCodePreview(false)}
+                        />
+                      </div>
+                    </Panel>
+                  </PanelGroup>
+                ) : (
+                  <div className="h-full">
+                    <Canvas 
+                      resources={resources}
+                      onResourceDrop={handleResourceDrop}
+                      onResourceSelect={handleResourceSelect}
+                      onResourceDelete={handleResourceDelete}
+                      onResourceMove={handleResourceMove}
+                      selectedResource={selectedResource}
+                      onResourceGroupClick={handleResourceGroupClick}
+                    />
+                  </div>
+                )}
+              </div>
+            </Panel>
+            
+            {(selectedResource || showConfigurationPanel) && (
+              <>
+                <PanelResizeHandle className="w-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-300 dark:hover:bg-blue-600 cursor-col-resize flex items-center justify-center group relative transition-all duration-300">
+                  <div className="w-1 h-12 bg-gray-400 dark:bg-gray-600 group-hover:bg-blue-500 transition-all duration-300 rounded-full transform group-hover:scale-110"></div>
+                </PanelResizeHandle>
+                
+                <Panel defaultSize={30} minSize={20} maxSize={45}>
+                  <div className="h-full animate-slide-in-right">
+                    {selectedResource ? (
+                      <div className="animate-fade-in-up">
+                        <ConfigurationPanel 
+                          resource={selectedResource}
+                          onResourceUpdate={handleResourceUpdate}
+                          onClose={() => setSelectedResource(null)}
+                          allResources={resources}
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 h-full animate-fade-in-up flex flex-col">
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                          <h3 className="text-lg font-semibold">
+                            {configurationMode === 'subscription' ? 'Subscription Configuration' : 
+                             configurationMode === 'resource_group' ? 'Resource Group Configuration' : 
+                             'Configuration'}
+                          </h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                          {configurationMode === 'subscription' && (
+                            <div className="space-y-6">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                              <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Subscription Details</h4>
+                              <div className="space-y-2 text-sm">
+                                <div>
+                                  <span className="font-medium">Name:</span> {resources.length > 0 && resources[0].config?.subscriptionName ? resources[0].config.subscriptionName : 'Not configured'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Region:</span> {resources.length > 0 && resources[0].config?.location ? resources[0].config.location : 'Not configured'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Environment:</span> {resources.length > 0 && resources[0].config?.environment ? resources[0].config.environment : 'Not configured'}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Project:</span> {resources.length > 0 && resources[0].config?.projectName ? resources[0].config.projectName : 'Not configured'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* AD Roles Section */}
+                            {resources.length > 0 && resources[0].config?.resourceSpecificRoles && resources[0].config.resourceSpecificRoles.length > 0 && (
+                              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                                <h4 className="font-semibold text-green-900 dark:text-green-100 mb-3">Role Assignments</h4>
+                                <div className="space-y-2">
+                                  {resources[0].config.resourceSpecificRoles.map((role: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-2 text-sm">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <span className="text-green-800 dark:text-green-200">{role}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Tags Section */}
+                            {resources.length > 0 && resources[0].config?.tags && Object.keys(resources[0].config.tags).length > 0 && (
+                              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+                                <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-3">Resource Tags</h4>
+                                <div className="space-y-2">
+                                  {Object.entries(resources[0].config.tags).map(([key, value]) => (
+                                    <div key={key} className="flex items-center justify-between text-sm">
+                                      <span className="font-medium text-purple-800 dark:text-purple-200">{key}:</span>
+                                      <span className="text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-800/50 px-2 py-1 rounded">{value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => setShowGlobalInfo(true)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 btn-primary-enhanced ripple text-sm btn-content-center"
+                              >
+                                <span className="icon-container rotate-on-hover">⚙️</span>
+                                Edit Global Settings
+                              </button>
+                            </div>
+                          )}
+                          {configurationMode === 'resource_group' && selectedResourceGroup && (
+                            <div className="space-y-6">
+                              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700">
+                                <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-3">Resource Group: {selectedResourceGroup}</h4>
+                                <p className="text-sm text-orange-700 dark:text-orange-300">
+                                  Configure the settings and properties for this resource group.
+                                </p>
+                              </div>
+
+                              {/* Subscription Name Field - Read-only, from Global Info */}
+                              <div className="space-y-2">
+                                <Label htmlFor="subscriptionName">Subscription Name</Label>
+                                <Input
+                                  id="subscriptionName"
+                                  value={resourceGroupConfig.subscriptionName}
+                                  readOnly
+                                  disabled
+                                  className="w-full bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                                />
+                              </div>
+
+                              {/* Resource Group Name Field - Read-only, from Global Info */}
+                              <div className="space-y-2">
+                                <Label htmlFor="resourceGroupName">Resource Group Name</Label>
+                                <Input
+                                  id="resourceGroupName"
+                                  value={resourceGroupConfig.resourceGroupName}
+                                  readOnly
+                                  disabled
+                                  className="w-full bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                                />
+                              </div>
+
+                              {/* Location Field - Read-only, from Global Info */}
+                              <div className="space-y-2">
+                                <Label htmlFor="location">Location</Label>
+                                <Input
+                                  id="location"
+                                  value={resourceGroupConfig.location}
+                                  readOnly
+                                  disabled
+                                  className="w-full bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                                />
+                              </div>
+
+                              {/* Tags Section - Read-only display, from Global Info */}
+                              <div className="space-y-2">
+                                <Label>Tags</Label>
+                                <div className="space-y-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border">
+                                  {Object.keys(resourceGroupConfig.tags).length > 0 ? (
+                                    Object.entries(resourceGroupConfig.tags).map(([key, value]) => (
+                                      <div key={key} className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">{key}:</span>
+                                        <span className="text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border">
+                                          {value}
+                                        </span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                                      No tags configured in Global Information
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Edit Global Settings Button */}
+                              <div className="flex space-x-2">
+                                <Button 
+                                  onClick={() => setShowGlobalInfo(true)}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                  <span className="icon-container rotate-on-hover">⚙️</span>
+                                  Edit Global Settings
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                          <button 
+                            onClick={() => setShowConfigurationPanel(false)}
+                            className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 btn-secondary-enhanced ripple btn-content-center"
+                          >
+                            <span className="icon-container rotate-on-hover">✖️</span>
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Panel>
+              </>
+            )}
+          </PanelGroup>
+        </div>
+      </div>
+      
+      {/* Global Info Modal */}
+      <GlobalInfoModal
+        isOpen={showGlobalInfo}
+        onClose={() => setShowGlobalInfo(false)}
+        resources={resources}
+        onResourcesUpdate={handleResourcesUpdate}
+        selectedLandingZone={selectedLandingZone}
+        onConfigurationPanelTrigger={handleConfigurationPanelTrigger}
+      />
+      
+      <Toaster />
+    </DndProvider>
+  );
+}

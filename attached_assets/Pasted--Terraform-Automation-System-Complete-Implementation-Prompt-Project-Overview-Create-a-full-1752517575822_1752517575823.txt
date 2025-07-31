@@ -1,0 +1,253 @@
+# Terraform Automation System - Complete Implementation Prompt
+
+## Project Overview
+Create a full-stack web application for automating Azure resource creation using Terraform through a drag-and-drop UI interface. The system should integrate with Terraform Cloud to source modules and generate infrastructure code.
+
+## Core Architecture Requirements
+
+### Frontend (React UI)
+- **Drag-and-Drop Interface**: Interactive canvas where users can drag Azure resource components
+- **Resource Components**: Pre-built UI cards for common Azure resources (Key Vault, Storage Account, Virtual Network, etc.)
+- **Configuration Forms**: Dynamic forms that appear when users drop resources, allowing input of resource-specific parameters
+- **Visual Flow**: Show connections between resources and dependencies
+- **Code Preview**: Real-time preview of generated Terraform code
+- **Deployment Status**: Progress tracking and status updates during resource provisioning
+
+### Backend (Node.js/Express)
+- **Terraform Cloud Integration**: API endpoints to interact with Terraform Cloud
+- **Module Management**: Fetch and manage custom Terraform modules
+- **Code Generation**: Transform UI configuration into valid Terraform code
+- **Authentication**: Handle Terraform Cloud API token authentication
+- **Workflow Orchestration**: Manage the complete deployment pipeline
+
+## Detailed Implementation Requirements
+
+### 1. Frontend Components Needed
+
+#### Main Dashboard
+```
+- Header with project name and settings
+- Sidebar with draggable Azure resource components
+- Main canvas area for building infrastructure
+- Bottom panel for code preview and logs
+```
+
+#### Resource Components (Draggable Items)
+```
+- Azure Key Vault
+- Storage Account  
+- Virtual Network
+- Subnet
+- Network Security Group
+- Virtual Machine
+- App Service
+- SQL Database
+- Resource Group
+```
+
+#### Configuration Panels
+```
+- Dynamic forms based on resource type
+- Input validation
+- Parameter descriptions and help text
+- Required vs optional field indicators
+```
+
+### 2. Backend API Endpoints
+
+#### Terraform Cloud Integration
+```
+POST /api/terraform/validate-token
+GET /api/terraform/modules
+POST /api/terraform/generate-code
+POST /api/terraform/deploy
+GET /api/terraform/status/:deploymentId
+```
+
+#### Module Management
+```
+GET /api/modules/list
+GET /api/modules/:moduleId/schema
+POST /api/modules/configure
+```
+
+### 3. Key Features to Implement
+
+#### Drag-and-Drop Functionality
+- Use React DnD or similar library
+- Snap-to-grid functionality
+- Visual feedback during drag operations
+- Connection lines between dependent resources
+
+#### Code Generation Logic
+- Template-based Terraform code generation
+- Variable substitution from UI inputs
+- Dependency resolution
+- Validation of generated code
+
+#### Terraform Cloud Workflow
+- Workspace creation/management
+- Variable injection
+- Plan and apply operations
+- Status monitoring
+
+#### Real-time Updates
+- WebSocket connection for deployment status
+- Progress indicators
+- Error handling and rollback options
+
+### 4. Testing Requirements
+
+#### Unit Tests
+- Component rendering tests
+- API endpoint tests
+- Code generation logic tests
+- Terraform Cloud integration tests
+
+#### Integration Tests
+- End-to-end workflow tests
+- UI interaction tests
+- Backend API integration tests
+
+#### Mock Data
+- Sample Terraform modules
+- Test configurations
+- Mock API responses
+
+### 5. File Structure
+
+```
+/src
+  /components
+    /DragDrop
+      - Canvas.jsx
+      - ResourceCard.jsx
+      - ConfigPanel.jsx
+    /Common
+      - Header.jsx
+      - Sidebar.jsx
+      - StatusPanel.jsx
+  /services
+    - terraformApi.js
+    - moduleService.js
+    - codeGenerator.js
+  /utils
+    - validation.js
+    - helpers.js
+  /styles
+    - main.css
+    - components.css
+
+/server
+  /routes
+    - terraform.js
+    - modules.js
+  /services
+    - terraformCloud.js
+    - codeGenerator.js
+  /middleware
+    - auth.js
+    - validation.js
+  /utils
+    - templates.js
+    - helpers.js
+```
+
+### 6. Environment Setup
+
+#### Required Dependencies
+**Frontend:**
+- React 18+
+- React DnD
+- Axios
+- Socket.io-client
+- Material-UI or similar
+
+**Backend:**
+- Node.js/Express
+- Socket.io
+- Terraform Cloud API client
+- File system operations
+- CORS middleware
+
+#### Environment Variables
+```
+TERRAFORM_CLOUD_TOKEN=your_token_here
+TERRAFORM_ORGANIZATION=your_org
+AZURE_SUBSCRIPTION_ID=your_subscription
+NODE_ENV=development
+PORT=3000
+```
+
+### 7. Implementation Priority
+
+#### Phase 1 (MVP)
+1. Basic drag-and-drop UI with 3-4 Azure resources
+2. Simple configuration forms
+3. Basic code generation for Key Vault and Storage Account
+4. Mock Terraform Cloud integration
+
+#### Phase 2 (Core Features)
+1. Full Terraform Cloud integration
+2. Real deployment workflow
+3. Status monitoring and logging
+4. Error handling and validation
+
+#### Phase 3 (Enhancement)
+1. Advanced resource types
+2. Resource dependencies and connections
+3. Import existing infrastructure
+4. Team collaboration features
+
+### 8. Specific Technical Instructions
+
+#### For React Components
+- Use functional components with hooks
+- Implement proper state management (Context API or Redux)
+- Add proper TypeScript types if using TypeScript
+- Include accessibility features
+
+#### For Backend Services
+- Use async/await patterns
+- Implement proper error handling
+- Add request validation middleware
+- Include comprehensive logging
+
+#### For Code Generation
+- Use template literals or template engines
+- Implement proper variable escaping
+- Add code formatting and validation
+- Support for different Azure regions
+
+### 9. Testing Strategy
+
+#### Mock Services
+- Create mock Terraform Cloud responses
+- Simulate different deployment scenarios
+- Test error conditions and edge cases
+
+#### Demo Data
+- Pre-configured resource templates
+- Sample infrastructure patterns
+- Test user scenarios
+
+## Expected Deliverables
+
+1. **Working Frontend**: Complete React application with drag-and-drop functionality
+2. **Backend API**: Full Express.js server with Terraform Cloud integration
+3. **Code Generation**: Working Terraform code generator
+4. **Testing Suite**: Comprehensive tests for all components
+5. **Documentation**: Setup instructions and usage guide
+6. **Demo Configuration**: Ready-to-use example configurations
+
+## Success Criteria
+
+- Users can drag Azure resources onto canvas
+- Configuration forms work properly
+- Terraform code is generated correctly
+- Integration with Terraform Cloud functions
+- Resources are successfully deployed to Azure
+- Status updates work in real-time
+- Error handling is robust
+
+Create this system with a focus on modularity, scalability, and user experience. Ensure all components work together seamlessly and provide a smooth workflow from UI interaction to Azure resource provisioning.

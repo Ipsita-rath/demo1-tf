@@ -1,0 +1,832 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom colors for Azure theme */
+  --azure-blue: hsl(207, 90%, 54%);
+  --azure-dark: hsl(207, 90%, 44%);
+  --azure-light: hsl(195, 100%, 47%);
+  --success: hsl(120, 60%, 50%);
+  --warning: hsl(45, 100%, 51%);
+  --error: hsl(0, 70%, 50%);
+  
+  /* Custom scrollbar colors for light theme */
+  --scrollbar-track: hsl(0, 0%, 98%);
+  --scrollbar-thumb: hsl(0, 0%, 85%);
+  --scrollbar-thumb-hover: hsl(0, 0%, 75%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  
+  /* Custom scrollbar colors for dark theme */
+  --scrollbar-track: hsl(240, 10%, 3.9%);
+  --scrollbar-thumb: hsl(240, 3.7%, 15.9%);
+  --scrollbar-thumb-hover: hsl(240, 3.7%, 25%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+  
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+}
+
+@layer components {
+  /* Animated gradient background */
+  .gradient-bg {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Card animations */
+  .card-entrance {
+    animation: fade-in-up 0.6s ease-out;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Pulse animation for active elements */
+  .pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@layer components {
+  .drag-handle {
+    cursor: move;
+  }
+  
+  .drag-over {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  
+  .auto-fit-grid {
+    container-type: inline-size;
+  }
+  
+  .responsive-resource-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  @container (max-width: 600px) {
+    .responsive-resource-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+  }
+  
+  @container (max-width: 400px) {
+    .responsive-resource-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+  }
+  
+  .code-highlight {
+    background-color: hsl(60, 4.8%, 95.9%);
+    border-left: 4px solid hsl(207, 90%, 54%);
+  }
+  
+  .resource-card {
+    transition: all 0.2s ease;
+  }
+  
+  .resource-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .deployment-status {
+    animation: pulse 2s infinite;
+  }
+  
+  .connection-line {
+    stroke: hsl(217, 91%, 60%);
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 8,4;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+  
+  .connection-line:hover {
+    opacity: 0.9;
+    stroke-width: 3;
+  }
+  
+  .resource-flow-container {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+    justify-items: center;
+    min-height: 400px;
+  }
+  
+  .resource-flow-container .resource-card {
+    width: 160px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .resource-flow-container .resource-card:first-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+  
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: hsl(60, 4.8%, 95.9%);
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(240, 3.7%, 42.9%);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(240, 5%, 34.9%);
+  }
+  
+  /* Terraform syntax highlighting */
+  .terraform-code .keyword {
+    color: hsl(270, 70%, 60%);
+  }
+  
+  .terraform-code .string {
+    color: hsl(120, 60%, 50%);
+  }
+  
+  .terraform-code .comment {
+    color: hsl(207, 90%, 54%);
+  }
+  
+  .terraform-code .number {
+    color: hsl(30, 70%, 50%);
+  }
+  
+  /* Loading animations */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Utility classes */
+.success {
+  color: hsl(120, 60%, 50%);
+}
+
+.warning {
+  color: hsl(45, 100%, 51%);
+}
+
+.error {
+  color: hsl(0, 70%, 50%);
+}
+
+.azure-blue {
+  color: hsl(207, 90%, 54%);
+}
+
+.bg-success {
+  background-color: hsl(120, 60%, 50%);
+}
+
+.bg-warning {
+  background-color: hsl(45, 100%, 51%);
+}
+
+.bg-error {
+  background-color: hsl(0, 70%, 50%);
+}
+
+.bg-azure-blue {
+  background-color: hsl(207, 90%, 54%);
+}
+
+/* Enhanced Animation Definitions */
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  }
+}
+
+@keyframes dragHover {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Enhanced Animation Classes */
+.animate-bounce-in {
+  animation: bounceIn 0.5s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+.animate-drag-hover {
+  animation: dragHover 1s ease-in-out infinite;
+}
+
+/* Drag and Drop Animations */
+.dragging {
+  transform: rotate(5deg) scale(1.05);
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.drag-preview {
+  transform: scale(0.8);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.drop-zone-active {
+  background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+  animation: pulseGlow 1s infinite;
+}
+
+.resource-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.resource-card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Panel Animations */
+.panel-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.panel-exit {
+  animation: slideInRight 0.3s ease-out reverse;
+}
+
+/* Modal Animations */
+.modal-backdrop {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.modal-content {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Enhanced Icon Animations */
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes iconRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes iconBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes buttonGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Icon Animation Classes */
+.icon-float {
+  animation: iconFloat 2s ease-in-out infinite;
+}
+
+.icon-rotate {
+  animation: iconRotate 2s linear infinite;
+}
+
+.icon-pulse {
+  animation: iconPulse 1.5s ease-in-out infinite;
+}
+
+.icon-bounce {
+  animation: iconBounce 1s ease-in-out infinite;
+}
+
+/* Button Enhancement Classes */
+.btn-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.btn-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-enhanced:hover::before {
+  left: 100%;
+}
+
+.btn-enhanced:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.btn-enhanced:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Primary Button Enhancements */
+.btn-primary-enhanced {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  color: white;
+  animation: buttonGlow 3s ease-in-out infinite;
+}
+
+.btn-primary-enhanced:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+}
+
+/* Secondary Button Enhancements */
+.btn-secondary-enhanced {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  border: 1px solid #d1d5db;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary-enhanced:hover {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(107, 114, 128, 0.3);
+}
+
+/* Icon Container Enhancements */
+.icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-container:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Special Effect Classes */
+.glow-on-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+  transform: scale(1.05);
+}
+
+.bounce-on-click:active {
+  animation: iconBounce 0.6s ease;
+}
+
+.rotate-on-hover:hover {
+  transform: rotate(360deg);
+  transition: transform 0.6s ease;
+}
+
+.float-on-hover:hover {
+  animation: iconFloat 1s ease-in-out infinite;
+}
+
+/* Ripple Effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Alignment Utility Classes */
+.align-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.align-start {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.align-end {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.align-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.align-around {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.text-center-responsive {
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .text-center-responsive {
+    text-align: left;
+  }
+}
+
+/* Icon and Text Alignment */
+.icon-text-aligned {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+}
+
+.icon-text-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+/* Button Content Alignment */
+.btn-content-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+
+.btn-content-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+
+/* Grid Alignment */
+.grid-aligned {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+}
+
+/* Flex Container Alignment */
+.flex-aligned-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flex-aligned-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Resource Card Alignment */
+.resource-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 3rem;
+}
+
+.resource-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+
+.resource-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0 0.5rem;
+}
+
+.resource-actions-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.hover\:bg-azure-dark:hover {
+  background-color: hsl(207, 90%, 44%);
+}
+
+.border-azure-blue {
+  border-color: hsl(207, 90%, 54%);
+}
+
+.text-azure-blue {
+  color: hsl(207, 90%, 54%);
+}
+
+/* React DnD specific styles */
+.dnd-preview {
+  opacity: 0.8;
+  transform: rotate(5deg);
+}
+
+.dnd-ghost {
+  opacity: 0.4;
+}
+
+/* Custom form styles */
+.form-field-required::after {
+  content: " *";
+  color: hsl(0, 70%, 50%);
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-indicator.running {
+  background-color: hsl(120, 60%, 50%);
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.stopped {
+  background-color: hsl(0, 70%, 50%);
+}
+
+.status-indicator.pending {
+  background-color: hsl(45, 100%, 51%);
+  animation: pulse 2s infinite;
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-stack {
+    flex-direction: column;
+  }
+}
