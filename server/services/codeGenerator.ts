@@ -344,11 +344,13 @@ function generateAzureResourceName(resourceType: string, globalConfig?: any): st
   
   switch (resourceType) {
     case 'virtual_network':
+      // Format: vnet-<Project Name>-<Location>-<Environment>-01
       return `vnet-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
     case 'storage_account':
-      return `st${projectName.toLowerCase()}${environment}01`;
+      // Format: sa<Project Name><Location><Environment>01 (no hyphens, lowercase)
+      return `sa${projectName.toLowerCase()}${shortRegion}${environment}01`.substring(0, 24);
     case 'key_vault':
-      return `kv${projectName.toLowerCase()}${environment}01`;
+      return `kv-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
     case 'virtual_machine':
       return `vm-${projectName.toLowerCase()}-${shortRegion}-${environment}-01`;
     case 'app_service':
